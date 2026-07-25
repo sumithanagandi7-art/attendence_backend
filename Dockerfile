@@ -14,10 +14,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 # Install Python dependencies first (better layer caching on rebuilds)
-COPY requirements.txt .
+COPY requirements-render.txt .
 RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir -r requirements.txt \
-    && pip install --no-cache-dir gunicorn psycopg2-binary
+    && pip install --no-cache-dir -r requirements-render.txt
 
 # Copy the rest of the application
 COPY . .
