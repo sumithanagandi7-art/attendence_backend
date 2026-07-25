@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # SmartGov Attendance — Backend (Flask + DBMS)
 
 AI-powered, location-aware attendance & workforce management backend for
@@ -204,3 +205,6 @@ curl http://localhost:5000/api/reports/monthly?month=2026-07 -H "Authorization: 
  #   a t t e n d e n c e _ b a c k e n d  
  #   a t t e n d e n c e _ b a c k e n d  
  
+=======
+"# attendence_backend" 
+>>>>>>> 4f61eecb411fb310ac9b809e78c0c1f921fe44b0
