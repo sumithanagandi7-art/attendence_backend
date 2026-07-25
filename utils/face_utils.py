@@ -15,7 +15,7 @@ from PIL import Image, ExifTags
 # Maximum pixel dimension — larger images are downscaled to this before
 # running face detection.  Keeps memory usage and processing time low on
 # Render's free tier while still being large enough for reliable detection.
-_MAX_DIMENSION = 1500
+_MAX_DIMENSION = 800
 
 
 def _preprocess_image(image_path):
@@ -80,10 +80,9 @@ def extract_face_encoding(image_path):
     Load an image from disk and return the 128-d encoding of the first
     detected face.
 
-    Detection strategy:
-      1. Try the fast HOG model with upsample=2 (catches most faces).
-      2. If no face found, retry with the more accurate CNN model
-         (handles difficult lighting, angles, and partial occlusion).
+    Detection strategy (HOG only — CNN is too memory-heavy for free-tier):
+      1. Try HOG with upsample=1 (standard, fast).
+      2. If no face found, retry with upsample=2 (catches smaller/distant faces).
 
     Returns (encoding_list, None) on success or (None, error_string) on failure.
     """
@@ -92,21 +91,22 @@ def extract_face_encoding(image_path):
 
     image = face_recognition.load_image_file(image_path)
 
-    # --- Attempt 1: HOG model (fast) with upsample=2 for smaller faces ---
+    # --- Attempt 1: HOG model with standard upsample ---
     face_locations = face_recognition.face_locations(
-        image, number_of_times_to_upsample=2, model="hog"
+        image, number_of_times_to_upsample=1, model="hog"
     )
 
-    # --- Attempt 2: CNN model (slower, much more accurate) ---
+    # --- Attempt 2: HOG model with more upsampling for smaller faces ---
     if len(face_locations) == 0:
         face_locations = face_recognition.face_locations(
-            image, number_of_times_to_upsample=1, model="cnn"
+            image, number_of_times_to_upsample=2, model="hog"
         )
 
     if len(face_locations) == 0:
         return None, "No face detected in the image. Please use good lighting, face the camera directly, and remove masks or sunglasses."
     if len(face_locations) > 1:
-        return None, "Multiple faces detected — please submit a photo with only one face."
+        # Use only the largest face instead of rejecting
+        face_locations = [max(face_locations, key=lambda r: (r[2] - r[0]) * (r[1] - r[3]))]
 
     encodings = face_recognition.face_encodings(image, known_face_locations=face_locations)
     return encodings[0].tolist(), None

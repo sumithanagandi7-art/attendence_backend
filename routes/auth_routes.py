@@ -85,17 +85,31 @@ def register_face():
     if "image" not in request.files:
         return jsonify({"error": "No image file uploaded (field name must be 'image')."}), 400
 
-    emp = Employee.query.get(int(get_jwt_identity()))
-    image_path = save_uploaded_image(request.files["image"], current_app.config["FACE_UPLOAD_DIR"])
+    try:
+        emp = Employee.query.get(int(get_jwt_identity()))
+        uploaded_file = request.files["image"]
+        print(f"[FACE-ENROLL] Received file: {uploaded_file.filename}, "
+              f"content_type: {uploaded_file.content_type}, "
+              f"employee: {emp.emp_id}")
 
-    encoding, error = extract_face_encoding(image_path)
-    if error:
-        return jsonify({"error": error}), 422
+        image_path = save_uploaded_image(uploaded_file, current_app.config["FACE_UPLOAD_DIR"])
+        print(f"[FACE-ENROLL] Saved to: {image_path}")
 
-    emp.set_face_encoding(encoding)
-    emp.face_image_path = image_path
-    db.session.commit()
-    return jsonify({"message": "Face registered successfully."}), 200
+        encoding, error = extract_face_encoding(image_path)
+        if error:
+            print(f"[FACE-ENROLL] Detection failed: {error}")
+            return jsonify({"error": error}), 422
+
+        print(f"[FACE-ENROLL] Face detected successfully, saving encoding")
+        emp.set_face_encoding(encoding)
+        emp.face_image_path = image_path
+        db.session.commit()
+        return jsonify({"message": "Face registered successfully."}), 200
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": f"Server error during face registration: {str(e)}"}), 500
 
 
 @auth_bp.route("/me", methods=["GET"])
