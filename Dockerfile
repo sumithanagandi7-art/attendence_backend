@@ -13,10 +13,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# Install Python dependencies first (better layer caching on rebuilds)
+# ── KEY FIX: compile dlib with a SINGLE thread ──────────────────────────
+# dlib's cmake build defaults to using all CPU cores, which on Render
+# causes memory usage to exceed the 8 GB build limit.  Limiting to 1
+# parallel job keeps peak RAM at ~1-2 GB.
+ENV CMAKE_BUILD_PARALLEL_LEVEL=1
+ENV MAKEFLAGS="-j1"
+
+RUN pip install --no-cache-dir --upgrade pip
+
+# Install dlib first, alone, so the heavy C++ compile stays within memory.
+RUN pip install --no-cache-dir dlib
+
+# Now install everything else (face_recognition will see dlib is already
+# present and skip recompilation).
 COPY requirements-render.txt .
-RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir -r requirements-render.txt
+RUN pip install --no-cache-dir -r requirements-render.txt
 
 # Copy the rest of the application
 COPY . .
