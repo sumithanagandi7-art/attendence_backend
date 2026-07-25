@@ -32,7 +32,7 @@ class Config:
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=12)
 
     # --- Face recognition ---
-    FACE_MATCH_TOLERANCE = 0.5  # lower = stricter match (0.4-0.6 typical)
+    FACE_MATCH_TOLERANCE = 0.55  # lower = stricter match (0.4-0.6 typical; 0.55 balances mobile camera variation with security)
     FACE_UPLOAD_DIR = os.path.join(BASE_DIR, "uploads", "faces")
 
     # --- Geofencing ---
